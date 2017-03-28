@@ -1,1 +1,8 @@
 Library
+Temp/
+
+*.sln
+
+*.csproj
+
+\.vs/pdgj-mar-17/v14/\.suo

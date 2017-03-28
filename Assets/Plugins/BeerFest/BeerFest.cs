@@ -10,13 +10,13 @@ using UnityEngine.SceneManagement;
 public static class GameInfo
 {
   // Name of your Game
-  public static String GameName   = "Tasty Grog!";
+  public static String GameName   = "Pub Simulator";
   // Your name!
-  public static String GameAuthor = "Guybrush Threepwood";
+  public static String GameAuthor = "Robin Southern";
   // Starting Scene, or leave Blank to use the existing
   public static String StartScene = "";
   // Show debug controller and size information on the screen.
-  public static bool   ShowDebug  = true;
+  public static bool   ShowDebug  = false;
   // Show debug controller and size information on the screen. Pressed by the 'Back' button.
   public static bool   ShowHelp   = false;
   // Show help banner at the bottom right of the screen. Controlled by you!
@@ -57,25 +57,50 @@ public static class Controls
  
   public static bool Action1
   {
+    get { return InputManager.ActiveDevice.Action1.WasReleased || Input.GetKey(KeyCode.K); }
+  }
+  
+  public static bool Action1Down
+  {
     get { return InputManager.ActiveDevice.Action1 || Input.GetKey(KeyCode.K); }
   }
 
   public static bool Action2
+  {
+    get { return InputManager.ActiveDevice.Action2.WasReleased || Input.GetKey(KeyCode.L); }
+  }
+  
+  public static bool Action2Down
   {
     get { return InputManager.ActiveDevice.Action2 || Input.GetKey(KeyCode.L); }
   }
 
   public static bool Action3
   {
+    get { return InputManager.ActiveDevice.Action3.WasReleased || Input.GetKey(KeyCode.J); }
+  }
+  
+  public static bool Action3Down
+  {
     get { return InputManager.ActiveDevice.Action3 || Input.GetKey(KeyCode.J); }
   }
 
   public static bool Action4
   {
+    get { return InputManager.ActiveDevice.Action4.WasReleased || Input.GetKey(KeyCode.I); }
+  }
+  
+  public static bool Action4Down
+  {
     get { return InputManager.ActiveDevice.Action4 || Input.GetKey(KeyCode.I); }
   }
 
   public static bool DPadUp
+  {
+    get { return InputManager.ActiveDevice.DPadUp || Input.GetKey(KeyCode.W); }
+  }
+  
+  public static bool DPadUpDown
   {
     get { return InputManager.ActiveDevice.DPadUp || Input.GetKey(KeyCode.W); }
   }
@@ -99,22 +124,32 @@ public static class Controls
   {
     get { return InputManager.ActiveDevice.LeftBumper.IsPressed || Input.GetKey(KeyCode.Alpha1); }
   }
+  
+  public static bool LeftBumperDown
+  {
+    get { return InputManager.ActiveDevice.LeftBumper || Input.GetKey(KeyCode.Alpha1); }
+  }
 
   public static bool RightBumper
   {
     get { return InputManager.ActiveDevice.RightBumper.IsPressed || Input.GetKey(KeyCode.Alpha2); }
   }
   
+  public static bool RightBumperDown
+  {
+    get { return InputManager.ActiveDevice.RightBumper || Input.GetKey(KeyCode.Alpha2); }
+  }
+  
   // Reloads a Scene, effectivetly 'restarting the game' for another Player.
   public static bool Reset
   {
-    get { return InputManager.ActiveDevice.MenuWasPressed || Input.GetKeyUp(KeyCode.Escape); }
+    get { return Input.GetKeyUp(KeyCode.JoystickButton7); } //Input.GetButtonUp("JoystickButton7"); } // InputManager.ActiveDevice.MenuWasPressed || Input.GetKeyUp(KeyCode.Escape); }
   }
   
   // Shows a help overlay over the screen, explaining the game and controls.
   public static bool Help
   {
-    get { return InputManager.ActiveDevice.Action4.WasReleased || Input.GetKeyUp(KeyCode.Tab); }
+    get { return Input.GetKeyUp(KeyCode.JoystickButton6); } // || Input.GetKeyUp(KeyCode.Tab); }
   }
 
   public static float LeftStickX
@@ -324,14 +359,14 @@ public class BeerFest : MonoBehaviour
       GUI.color = new Color(1, 1, 1, 1);
       GUI.contentColor = Color.white;
 
-      IconText(boxX + boxW / 8, boxY + 20, boxW / 2, "Action4", "CLOSE HELP");
+      IconText(boxX + boxW / 8, boxY + 20, boxW / 2, "Help", "CLOSE HELP");
     }
     else
     {
       GUI.color = new Color(1, 1, 1, 1);
       GUI.contentColor = Color.white;
 
-      IconText(boxX + boxW / 8, boxY + 20, boxW / 2, "Action4", "HELP");
+      IconText(boxX + boxW / 8, boxY + 20, boxW / 2, "Help", "HELP");
       IconText(boxX + boxW / 2 + boxW / 8, boxY + 20, boxW / 2, "Reset", "RESET");
     }
   }

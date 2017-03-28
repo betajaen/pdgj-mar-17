@@ -1,0 +1,5 @@
+Glass of Water;HIGHBALL;* Water
+Shot of Vodka;SHOT;2 Vodka
+Whiskey Neat;HIGHBALL;2 Whiskey
+Glass of Red Wine;WINE;4 Wine
+A Small Shandy;HIGHBALL;1 Beer;* Lemonade
