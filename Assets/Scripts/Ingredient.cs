@@ -8,6 +8,7 @@ public enum IngredientWin
 {
   Ignore, //
   None,   // Doesn't have the liquid or not enough
+  Partial, // Has some of the liquid
   Exact,  // Has the liquid
   Over,   // Has the liquid but is over
   Wrong   // Wrong liquid
@@ -84,73 +85,101 @@ public class Ingredient : MonoBehaviour
     Image.enabled       = false;
   }
 
+  public IngredientWin GetWin()
+  {
+    bool hasMeasure = HasMeasure();
+    bool hasLiquid  = HasLiquid();
+
+    if (hasMeasure == false)
+      return IngredientWin.Wrong;
+    if (hasLiquid == false)
+      return IngredientWin.None;
+
+     int ml = 0;
+     int target = Measure.Measure * 25;
+
+      if (hasLiquid)
+      {
+        ml = Mathf.RoundToInt(GlassLiquid.AmountToMeasures(Liquid.amount, Glass.GlassType))  * 25;
+          
+        if (LiquidType == LiquidType.Beer && Glass.BeerHead != null)
+        {
+          ml += Mathf.RoundToInt(GlassLiquid.AmountToMeasures(Glass.BeerHead.amount, Glass.GlassType))  * 25;
+        }
+      }
+      
+      if (ml == 0)
+      {
+        return IngredientWin.None;
+      }
+      else if (ml < target)
+      {
+        return IngredientWin.Partial;
+      }
+      else if (GlassLiquid.MlApprox(ml, target))
+      {
+        return IngredientWin.Exact;
+      }
+      else if (ml >= target)
+      {
+        return IngredientWin.Over;
+      }
+      else
+      {
+        return IngredientWin.Wrong;
+      }
+  }
+
   public void Update()
   {
     if (RefreshNeeded)
     {
       RefreshNeeded = false;
       
-//      if (isCorrect)
-//      {
-//        if (Mathf.Approximately(progress, 0))
-//        {
-//          Image.sprite = TexNone;
-//        }
-//        else if (Mathf.Approximately(progress, 1.0f) || (progress > 0.95f && progress < 1.15f) )
-//        {
-//          Image.sprite = TexCorrect;
-//        }
-//        else if (progress > 1.15f)
-//        {
-//          Image.sprite = TexPlus;
-//        }
-//        else
-//        {
-//          Image.sprite = TexMiddle;
-//        }
-//      }
-//      else
-//      {
-//        Image.sprite = TexIncorrect;
-//      }
-
       bool hasMeasure = HasMeasure();
       bool hasLiquid  = HasLiquid();
 
       
-      if (hasMeasure)
+      if (hasMeasure && Glass != null)
       {
         
-        
-        int measures = 0;
+        Won = GetWin();
 
-        if (hasLiquid)
+        switch(Won)
         {
-          measures = (int) GlassLiquid.AmountToMeasures(Liquid.amount, Glass.GlassType);
+          case IngredientWin.None:
+            Image.sprite = TexNone;
+            break;
+          case IngredientWin.Partial:
+            Image.sprite = TexMiddle;
+          break;
+          case IngredientWin.Exact:
+            Image.sprite = TexCorrect;
+            break;
+          case IngredientWin.Over:
+            Image.sprite = TexPlus;
+            break;
+          case IngredientWin.Wrong:
+            Image.sprite = TexIncorrect;
+            break;
         }
 
-        if (measures == 0)
+
+        if (hasLiquid && Glass != null)
         {
-          Image.sprite = TexNone;
-          Won = IngredientWin.None;
-        }
-        else if (measures == Measure.Measure)
-        {
-          Image.sprite = TexCorrect;
-          Won = IngredientWin.Exact;
-        }
-        else if (measures >= Measure.Measure)
-        {
-          Image.sprite = TexPlus;
-          Won = IngredientWin.Over;
+          float liquidAmount = Liquid.amount;
+
+          if (Liquid.type == LiquidType.Beer && Glass.BeerHead != null)
+          {
+            liquidAmount += Glass.BeerHead.amount;
+          }
+
+          Text.text = GlassLiquid.LiquidTypeAndMlWithMeasureToString(liquidAmount, Measure.Amount, Liquid.type, Glass.GlassType);
         }
         else
         {
-          Image.sprite = TexMiddle;
-          Won = IngredientWin.None;
+          Text.text = String.Format("{0}", Measure.Text);
         }
-        
-        Text.text = String.Format("{0}", Measure.Text);
       }
       else if (hasLiquid)
       {
@@ -163,9 +192,7 @@ public class Ingredient : MonoBehaviour
         Image.sprite = TexIncorrect;
         Text.text = String.Format("??? {0} ", LiquidType);
       }
-    
     }
-    
   }
 
   public bool HasMeasure()
@@ -178,4 +205,8 @@ public class Ingredient : MonoBehaviour
     return (Liquid != null && Liquid.type != LiquidType.None);
   }
 
+  public bool HasHead()
+  {
+    return (HasLiquid() && (Liquid != null && Liquid.type != LiquidType.BeerHead));
+  }
 }

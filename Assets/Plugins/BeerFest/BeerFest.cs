@@ -14,9 +14,9 @@ public static class GameInfo
   // Your name!
   public static String GameAuthor = "Robin Southern";
   // Starting Scene, or leave Blank to use the existing
-  public static String StartScene = "";
+  public static String StartScene = "Start";
   // Show debug controller and size information on the screen.
-  public static bool   ShowDebug  = false;
+  public static bool   ShowDebug  = true;
   // Show debug controller and size information on the screen. Pressed by the 'Back' button.
   public static bool   ShowHelp   = false;
   // Show help banner at the bottom right of the screen. Controlled by you!
@@ -97,7 +97,7 @@ public static class Controls
 
   public static bool DPadUp
   {
-    get { return InputManager.ActiveDevice.DPadUp || Input.GetKey(KeyCode.W); }
+    get { return InputManager.ActiveDevice.DPadUp.IsPressed || Input.GetKey(KeyCode.W); }
   }
   
   public static bool DPadUpDown
@@ -109,16 +109,32 @@ public static class Controls
   {
     get { return InputManager.ActiveDevice.DPadRight || Input.GetKey(KeyCode.D); }
   }
+  
+  public static bool DPadRightDown
+  {
+    get { return InputManager.ActiveDevice.DPadRight.IsPressed || Input.GetKey(KeyCode.D); }
+  }
 
   public static bool DPadDown
+  {
+    get { return InputManager.ActiveDevice.DPadDown.IsPressed || Input.GetKey(KeyCode.S); }
+  }
+  
+  public static bool DPadDownDown
   {
     get { return InputManager.ActiveDevice.DPadDown || Input.GetKey(KeyCode.S); }
   }
 
   public static bool DPadLeft
   {
+    get { return InputManager.ActiveDevice.DPadLeft.IsPressed || Input.GetKey(KeyCode.A); }
+  }
+  
+  public static bool DPadLeftDown
+  {
     get { return InputManager.ActiveDevice.DPadLeft || Input.GetKey(KeyCode.A); }
   }
+
 
   public static bool LeftBumper
   {
@@ -143,13 +159,13 @@ public static class Controls
   // Reloads a Scene, effectivetly 'restarting the game' for another Player.
   public static bool Reset
   {
-    get { return Input.GetKeyUp(KeyCode.JoystickButton7); } //Input.GetButtonUp("JoystickButton7"); } // InputManager.ActiveDevice.MenuWasPressed || Input.GetKeyUp(KeyCode.Escape); }
+    get { return Input.GetKeyUp(KeyCode.JoystickButton7) || Input.GetKeyUp(KeyCode.Return) || Input.GetKeyUp(KeyCode.Menu); } //Input.GetButtonUp("JoystickButton7"); } // InputManager.ActiveDevice.MenuWasPressed || Input.GetKeyUp(KeyCode.Escape); }
   }
   
   // Shows a help overlay over the screen, explaining the game and controls.
   public static bool Help
   {
-    get { return Input.GetKeyUp(KeyCode.JoystickButton6); } // || Input.GetKeyUp(KeyCode.Tab); }
+    get { return Input.GetKeyUp(KeyCode.JoystickButton6) || Input.GetKeyUp(KeyCode.Escape); } // || Input.GetKeyUp(KeyCode.Tab); }
   }
 
   public static float LeftStickX
@@ -235,13 +251,14 @@ public class BeerFest : MonoBehaviour
   static Texture2D pdgjLogo;
   static Dictionary<String, Texture2D> icons; 
   static KeyCode[] keyCodes;
+  static bool      correctController;
 
   void Awake()
   {
     keyCodes = (KeyCode[]) Enum.GetValues(typeof(KeyCode));
   }
 
-  void Start ()
+  void Start()
   {
     labelStyle = new GUIStyle();
     labelStyle.font = (Font) Resources.Load("BeerFest/Roboto-Black");
@@ -274,6 +291,8 @@ public class BeerFest : MonoBehaviour
     labelStyleCentre = new GUIStyle(labelStyle);
     labelStyleCentre.alignment = TextAnchor.UpperCenter;
   }
+
+  float controllerCheckTime = 0.0f;
   
   void Update()
   {
@@ -293,6 +312,14 @@ public class BeerFest : MonoBehaviour
     {
       GameInfo.ShowHelp = !GameInfo.ShowHelp;
     }
+
+    controllerCheckTime += Time.deltaTime;
+
+    if (controllerCheckTime >= 1.0f)
+    {
+      correctController = (InputManager.ActiveDevice.Name == "XBox 360 Controller" || InputManager.ActiveDevice.Name == "Amazon Fire Controller");
+    }
+
   }
 
   void OnGUI()
@@ -302,6 +329,20 @@ public class BeerFest : MonoBehaviour
       // Naughty by works. :)
       Awake();
       Start();
+    }
+
+    if (correctController == false)
+    { 
+
+      GUI.color = new Color(0, 0, 0, kAlpha);
+      GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
+      
+      GUI.color = new Color(1, 1, 1, 1);
+      GUI.contentColor = Color.white;
+
+      HeadingCenter(0, Screen.height / 2, Screen.width, "Controller unplugged or missing! Contact PDGJ Event Organiser!");
+      Text(0, 0, Screen.width, InputManager.ActiveDevice.Name);
+      return;
     }
 
     ShowLeftBanner();
@@ -403,7 +444,6 @@ public class BeerFest : MonoBehaviour
     }
 
     Text(x, y, w, text);
-
   }
   
   void ShowHelp()

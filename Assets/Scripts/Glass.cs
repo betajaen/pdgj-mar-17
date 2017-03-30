@@ -1,7 +1,9 @@
-﻿using System;
+﻿//#define OLD_DRAWING_MODE
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
+using System.Runtime.InteropServices;
 using UnityEngine;
 
 public enum LiquidType
@@ -13,15 +15,13 @@ public enum LiquidType
   Whiskey,
   Cola,
   Lemonade,
-  Wine
+  Wine,
+  BeerHead
 }
 
 [System.Serializable]
 public class GlassLiquid
 {
-  const int   kMeasureMlInt = 25;
-  const float kMeasureMl = 25.0f;
-
 
   public static LiquidType LiquidStringToEnum(string s)
   {
@@ -38,104 +38,227 @@ public class GlassLiquid
     }
   }
 
+  public static String LiquidTypeToString(LiquidType lt)
+  {
+    switch(lt)
+    {
+      case LiquidType.Water:     return "Water";
+      case LiquidType.Beer:      return "Beer";
+      case LiquidType.Vodka:     return "Vodka";
+      case LiquidType.Whiskey:   return "Whiskey";
+      case LiquidType.Cola:      return "Cola";
+      case LiquidType.Lemonade:  return "Lemonade";
+      case LiquidType.Wine:      return "Wine";
+    }
+    return "?";
+  }
+
   public static String __PintShotGlassMl(float mlF, String name, bool fullGlass, GlassType gt)
   {
     int ml = (int) mlF;
-    int mlRounded = (int) ((mlF) / 25.0f) * 25;
+    int mlRounded = (int) ((mlF)/25.0f)*25;
 
     String text = String.Empty; // mlF.ToString() + ",";
 
-    if (fullGlass && (gt == GlassType.Pint))              text += String.Format("Pint of {0}", name);
-    else if (fullGlass && (gt == GlassType.HalfPint))     text += String.Format("Half Pint of {0}", name);
-    else if (fullGlass)                                   text += String.Format("Glass of {0}", name);
-    else if (ml <= 6)                                     text += String.Format("Drop of {0}", name);
-    else if (mlF < 25)                                    text += String.Format("{0} Tsp of {1}", (int) (ml / 6.0f), name);
-    else if (ml <= 25)                                    text += String.Format("Half a Shot of {0}", name);
-    else if (ml <= 50)                                    text += String.Format("Shot of {0}", name);
-    else if (ml == 100)                                   text += String.Format("2 Shots of {0}", name);
-    else                                                  text += String.Format("{0}ml of {1}", mlRounded, name);
+    if (fullGlass && (gt == GlassType.Pint)) text += String.Format("Pint of {0}", name);
+    else if (fullGlass && (gt == GlassType.HalfPint)) text += String.Format("Half Pint of {0}", name);
+    else if (fullGlass) text += String.Format("Glass of {0}", name);
+    else if (ml <= 6) text += String.Format("Drop of {0}", name);
+    else if (mlF < 25) text += String.Format("{0} Tsp of {1}", (int) (ml/6.0f), name);
+    else if (ml <= 25) text += String.Format("Half a Shot of {0}", name);
+    else if (ml <= 50) text += String.Format("Shot of {0}", name);
+    else if (ml == 100) text += String.Format("2 Shots of {0}", name);
+    else text += String.Format("{0}ml of {1}", mlRounded, name);
 
     return text;
   }
-  
+
   public static String __PintHalfGlassMl(float mlF, String name, bool fullGlass, GlassType gt)
   {
     int ml = (int) mlF;
-    int mlRounded = (int) ((mlF) / 25.0f) * 25;
+    int mlRounded = MlToScoringMeasures(mlF);
 
     String text = String.Empty; // mlF.ToString() + ",";
 
-    if (fullGlass && (gt == GlassType.Pint))              text += String.Format("Pint of {0}", name);
-    else if (fullGlass && (gt == GlassType.HalfPint))     text += String.Format("Half Pint of {0}", name);
-    else if (fullGlass)                                   text += String.Format("Glass of {0}", name);
-    else if (ml <= 6)                                     text += String.Format("Drop of {0}", name);
-    else if (mlF < 25)                                    text += String.Format("{0} Tsp of {1}", (int) (ml / 6.0f), name);
-    else                                                  text += String.Format("{0}ml of {1}", mlRounded, name);
+    if (fullGlass && (gt == GlassType.Pint)) text += String.Format("Pint of {0}", name);
+    else if (fullGlass && (gt == GlassType.HalfPint)) text += String.Format("Half Pint of {0}", name);
+    else if (fullGlass) text += String.Format("Glass of {0}", name);
+    else if (ml <= 6) text += String.Format("Drop of {0}", name);
+    else if (mlF < 25) text += String.Format("{0} Tsp of {1}", (int) (ml/6.0f), name);
+    else text += String.Format("{0}ml of {1}", mlRounded, name);
 
     return text;
   }
+
   public static String LiquidTypeAndMeasureToStringFloatAmount(float amount, LiquidType lt, GlassType gt)
   {
-    return LiquidTypeAndMlToString(AmountToMeasures(amount, gt) * 25, lt, gt);
+    return LiquidTypeAndMlToString(AmountToMeasures(amount, gt)*25, lt, gt);
   }
 
-  public static float  AmountToMeasures(float amount, GlassType gt)
+  public static float AmountToMeasures(float amount, GlassType gt)
   {
-    return (GetGlassSizeInMeasures(gt) * amount);
+    return (GetGlassSizeInMeasures(gt)*amount);
+  }
+
+  public static float AmountToScoringMeasures(float amount, GlassType gt)
+  {
+    return Mathf.CeilToInt(GetGlassSizeInMeasures(gt)*amount/25.0f)*25;
+  }
+
+  public static int MlToScoringMeasures(float ml)
+  {
+    return (int) ((ml)/25.0f)*25;
+  }
+
+  public static String MakeUnit(int ml, int glassSizeMl, LiquidType lt)
+  {
+    switch (lt)
+    {
+      case LiquidType.Water:
+      case LiquidType.Beer:
+      case LiquidType.Cola:
+      case LiquidType.Lemonade:
+      case LiquidType.Wine:
+      {
+        /*
+          if (ml <= 6)
+            return "1 Tsp";
+          if (ml <= 12)
+            return "2 Tsp";
+          if (ml <= 18)
+            return "3 Tsp";
+          if (ml <= 24)
+            return "4 Tsp";
+        */
+        return String.Format("{0} ml", ml);
+      }
+        break;
+      case LiquidType.Vodka:
+      case LiquidType.Whiskey:
+      {
+        if (ml <= 6)
+          return "1 Tsp";
+        if (ml <= 12)
+          return "2 Tsp";
+        if (ml <= 18)
+          return "3 Tsp";
+        if (ml <= 24)
+          return "4 Tsp";
+        if (ml <= 25 + 12)
+          return "1 Shot";
+        if (ml <= 50 + 12)
+          return "2 Shots";
+        return String.Format("{0} ml", ml);
+      }
+        break;
+    }
+    return String.Format("{0} ml", ml);
+  }
+
+  public static bool MlApprox(int x, int y, int diff = 20)
+  {
+    return Mathf.Abs(y - x) <= diff;
+  }
+
+  public static String LiquidTypeAndMlWithMeasureToString(float amount, float measureAmount, LiquidType lt, GlassType gt)
+  {
+    float glassSizeMlF = GetGlassSizeInMeasures(gt)*25;
+    int glassSizeMl = Mathf.CeilToInt(glassSizeMlF);
+    int liquidMl = Mathf.RoundToInt(amount*glassSizeMlF);
+    int targetMl = Mathf.RoundToInt(measureAmount*glassSizeMlF);
+    string name = LiquidTypeToString(lt);
+
+    switch (lt)
+    {
+      case LiquidType.Water:
+      case LiquidType.Beer:
+      case LiquidType.Cola:
+      case LiquidType.Lemonade:
+      case LiquidType.Wine:
+      {
+        if (MlApprox(targetMl, glassSizeMl))
+        {
+          if (MlApprox(liquidMl, targetMl))
+          {
+            return String.Format("Full Glass of {0}", name);
+          }
+          else
+          {
+            return String.Format("{0}/Glass of {1}", MakeUnit(liquidMl, glassSizeMl, lt), name);
+          }
+        }
+        else
+        {
+          return String.Format("{0}/{1} of {2}", MakeUnit(liquidMl, glassSizeMl, lt), MakeUnit(targetMl, glassSizeMl, lt), name);
+        }
+      }
+      case LiquidType.Vodka:
+      case LiquidType.Whiskey:
+      {
+        if (MlApprox(targetMl, glassSizeMl))
+        {
+          if (MlApprox(liquidMl, targetMl))
+          {
+            return String.Format("Full Glass of {0}", name);
+          }
+          else
+          {
+            return String.Format("{0}/Glass of {1}", MakeUnit(liquidMl, glassSizeMl, lt), name);
+          }
+        }
+        else
+        {
+          return String.Format("{0}/{1} of {2}", MakeUnit(liquidMl, glassSizeMl, lt), MakeUnit(targetMl, glassSizeMl, lt), name);
+        }
+      }
+      break;
+    }
+
+    return String.Format("{0}ml/{1}ml of {2}", liquidMl, targetMl, name);
   }
 
   public static String LiquidTypeAndMlToString(float ml, LiquidType lt, GlassType gt)
   {
-    float glassSize  = GetGlassSizeInMeasures(gt) * 25;
-    bool fullGlass   = Mathf.Approximately(ml, glassSize);
-    switch(lt)
+    float glassSizeMlF = GetGlassSizeInMeasures(gt)*25;
+    int glassSizeMl = Mathf.CeilToInt(glassSizeMlF);
+    int liquidMl = Mathf.RoundToInt(ml);
+    string name = LiquidTypeToString(lt);
+    
+    if (MlApprox(liquidMl, glassSizeMl))
     {
-      default:
-      case LiquidType.None:
-        return String.Format("{0}ml of Unknown", ml);
-      case LiquidType.Water:
-        return __PintHalfGlassMl(ml, "Water", fullGlass, gt);
-      case LiquidType.Beer:
-        return __PintHalfGlassMl(ml, "Beer", fullGlass, gt);
-      case LiquidType.Vodka:
-        return __PintShotGlassMl(ml, "Vodka", fullGlass, gt);
-      case LiquidType.Whiskey:
-        return __PintShotGlassMl(ml, "Whiskey", fullGlass, gt);
-      case LiquidType.Cola:
-        return __PintShotGlassMl(ml, "Cola", fullGlass, gt);
-      case LiquidType.Lemonade:
-        return __PintShotGlassMl(ml, "Lemonade", fullGlass, gt);
-      case LiquidType.Wine:
-        return __PintShotGlassMl(ml, "Wine", fullGlass, gt);
+      return String.Format("Glass of {0}", name);
+    }
+    else if (MlApprox(liquidMl, glassSizeMl / 2))
+    {
+      return String.Format("Half a glass of {0}", name);
+    }
+    else
+    {
+      return String.Format("{0} of {1}", MakeUnit(liquidMl, glassSizeMl, lt), name);
     }
   }
 
   public Ingredient ingredient;
 
-  [SerializeField] 
-  float _amount;
+  [SerializeField] float _amount;
 
   public float amount
   {
-    get 
-    {
-      return _amount;
-    }
+    get { return _amount; }
 
-    set 
-    { 
+    set
+    {
       _amount = value;
 
       if (ingredient != null)
       {
         ingredient.RefreshNeeded = true;
       }
-   }
+    }
   }
-  
-  
-  
-   // Relative to glass height
+
+
+  // Relative to glass height
   [SerializeField] public float[] visualWeights = new float[17]; // weights.
 
   [SerializeField] public LiquidType type;
@@ -146,22 +269,29 @@ public class GlassLiquid
   [SerializeField] public float pourSize;
   [SerializeField] public float centerX0, centerX1, centerY, centerY1;
   [SerializeField] public float idleAnimator;
+  [SerializeField] public GlassLiquid head;
+  [SerializeField] public GlassLiquid headLiquid;
 
   static byte kAlpha = 200;
+  static byte kAlpha2 = 180;
   static byte kAlphaHead = 240;
 
   static Color kColour_None = new Color32(1, 1, 1, kAlpha);
   static Color kColour_Water = new Color32(150, 220, 225, kAlpha);
   static Color kColour_WaterHead = new Color32(150 + 20, 220 + 20, 225 + 20, kAlpha);
-  static Color kColour_Beer = new Color32(10, 10, 10, kAlpha);
-  static Color kColour_Vodka = new Color32(200, 200, 200, kAlpha);
-  static Color kColour_VodkaHead = new Color32(200 + 20, 200 + 20, 200 + 20, kAlphaHead);
+  static Color kColour_Beer = new Color32(216, 96, 0, kAlpha);
+  static Color kColour_BeerHead = new Color32(240, 240, 240, kAlpha);
+  static Color kColour_BeerHeadHead = new Color32(250, 250, 250, kAlpha);
+  static Color kColour_Vodka = new Color32(220, 220, 220, kAlpha);
+  static Color kColour_VodkaHead = new Color32(220 + 10, 220 + 10, 220 + 10, kAlphaHead);
   static Color kColour_Whiskey = new Color32(213, 154, 111, kAlpha);
   static Color kColour_WhiskeyHead = new Color32(213 + 20, 154 + 20, 111 + 20, kAlpha);
   static Color kColour_Cola = new Color32(62, 48, 36, kAlpha);
   static Color kColour_ColaHead = new Color32(62 + 20, 48 + 20, 36 + 20, kAlphaHead);
-  static Color kColour_Lemonade = new Color32(240, 240, 255, kAlpha);
-  static Color kColour_Wine = new Color32(1, 1, 1, kAlpha);
+  static Color kColour_Lemonade = new Color32(252, 253, 245, kAlpha2);
+  static Color kColour_LemonadeHead = new Color32(252, 253, 245, kAlpha);
+  static Color kColour_Wine = new Color32(182, 39, 66, kAlpha);
+  static Color kColour_WineHead = new Color32(182 + 20, 39 + 20, 66 + 20, kAlpha);
 
   public static Color GetColour(LiquidType t)
   {
@@ -183,6 +313,8 @@ public class GlassLiquid
         return kColour_Lemonade;
       case LiquidType.Wine:
         return kColour_Wine;
+      case LiquidType.BeerHead:
+        return kColour_BeerHead;
     }
   }
 
@@ -195,7 +327,7 @@ public class GlassLiquid
       case LiquidType.Water:
         return kColour_WaterHead;
       case LiquidType.Beer:
-        return kColour_Beer;
+        return kColour_BeerHead;
       case LiquidType.Vodka:
         return kColour_VodkaHead;
       case LiquidType.Whiskey:
@@ -203,21 +335,23 @@ public class GlassLiquid
       case LiquidType.Cola:
         return kColour_ColaHead;
       case LiquidType.Lemonade:
-        return kColour_Lemonade;
+        return kColour_LemonadeHead;
       case LiquidType.Wine:
-        return kColour_Wine;
+        return kColour_WineHead;
+      case LiquidType.BeerHead:
+        return kColour_BeerHeadHead;
     }
   }
 
-  public const int kPint            = 23; // 575.0f/kMeasureMl; // 23 measures
-  public const int kHalfPint        = 11; // 275.0f/kMeasureMl; // 11 measures
-  public const int kWineGlass       = 4;  // 100.0f/kMeasureMl; // 4 measures
-  public const int kMeasure         = 1;  // 25.0f/kMeasureMl;  // 1 measure
-  public const int kDoubleMeasure   = 2;  // 50.0f/kMeasureMl;  // 2 measure
+  public const int kPint = 23; // 575.0f/kMeasureMl; // 23 measures
+  public const int kHalfPint = 11; // 275.0f/kMeasureMl; // 11 measures
+  public const int kWineGlass = 4; // 100.0f/kMeasureMl; // 4 measures
+  public const int kMeasure = 1; // 25.0f/kMeasureMl;  // 1 measure
+  public const int kDoubleMeasure = 2; // 50.0f/kMeasureMl;  // 2 measure
 
   public static int GetGlassSizeInMeasures(GlassType gt)
   {
-    switch(gt)
+    switch (gt)
     {
       default:
       case GlassType.None:
@@ -262,7 +396,7 @@ public class GlassLiquid
     }
     return 1;
   }
-  
+
   public static GlassType GlassStringToEnum(string s)
   {
     switch (s.ToUpper())
@@ -287,35 +421,36 @@ public class GlassLiquid
 
 public enum GlassType
 {
-  None,               // 0
-  Pint,               // 24 measures ->  PINT      -> Beer
-  HalfPint,           // 12 measures ->  HALF      -> Beer, Lemonade, Cola
-  Highball,           // 4  measures ->  HIGHBALL  -> Water, Cocktails
-  Cocktail,           // 4  measures ->  COCKTAIL  -> Cocktails
-  Shot,               // 2  measures ->  SHOT      -> Vodka, Whiskey
-  Wine,               // 4  measures ->  WINE      -> Wine
+  None,      // 0
+  Pint,      // 24 measures ->  PINT      -> Beer
+  HalfPint,  // 12 measures ->  HALF      -> Beer, Lemonade, Cola
+  Highball,  // 4  measures ->  HIGHBALL  -> Water, Cocktails
+  Cocktail,  // 4  measures ->  COCKTAIL  -> Cocktails
+  Shot,      // 2  measures ->  SHOT      -> Vodka, Whiskey
+  Wine,      // 4  measures ->  WINE      -> Wine
 }
 
 public class GlassInfo
 {
   public GlassType type;
   public float width, height, halfWidth, halfHeight;
-  public float measures;
+  public float measures, flowRate;
 
-  public GlassInfo(GlassType type_, float width_, float height_, float measures_)
+  public GlassInfo(GlassType type_, float width_, float height_, float measures_, float flowRate_)
   {
     type = type_;
     width = width_;
     height = height_;
     measures = measures_;
+    flowRate = flowRate_;
 
-    halfWidth  = width * 0.5f;
-    halfHeight = height * 0.5f;
+    halfWidth = width*0.5f;
+    halfHeight = height*0.5f;
   }
-  
+
   public static GlassInfo GetGlassType(GlassType type_)
   {
-    switch(type_)
+    switch (type_)
     {
       default:
       case GlassType.None:
@@ -334,14 +469,14 @@ public class GlassInfo
         return kWine;
     }
   }
-  
-  public static GlassInfo kNone               = new GlassInfo(GlassType.None,     1.0f, 1.0f, 1);
-  public static GlassInfo kPint               = new GlassInfo(GlassType.Pint,     2.0f, 4.0f, GlassLiquid.kPint + 1);
-  public static GlassInfo kHalfPint           = new GlassInfo(GlassType.HalfPint, 2.0f, 2.0f, GlassLiquid.kHalfPint + 1);
-  public static GlassInfo kCocktail_Highball  = new GlassInfo(GlassType.Highball, 1.75f, 3.2f, GlassLiquid.kWineGlass);
-  public static GlassInfo kCocktail_Cocktail  = new GlassInfo(GlassType.Cocktail, 1.0f, 1.0f, GlassLiquid.kWineGlass);
-  public static GlassInfo kShot               = new GlassInfo(GlassType.Shot,     0.5f, 0.5f, GlassLiquid.kDoubleMeasure);
-  public static GlassInfo kWine               = new GlassInfo(GlassType.Wine,     2.0f, 1.0f, GlassLiquid.kWineGlass);
+
+  public static GlassInfo kNone              = new GlassInfo(GlassType.None, 1.0f, 1.0f, 1, 0.005f);
+  public static GlassInfo kPint              = new GlassInfo(GlassType.Pint, 2.0f, 4.0f, GlassLiquid.kPint + 1, 0.0075f);
+  public static GlassInfo kHalfPint          = new GlassInfo(GlassType.HalfPint, 2.0f, 2.0f, GlassLiquid.kHalfPint + 1, 0.005f);
+  public static GlassInfo kCocktail_Highball = new GlassInfo(GlassType.Highball, 1.75f, 3.2f, GlassLiquid.kWineGlass, 0.005f);
+  public static GlassInfo kCocktail_Cocktail = new GlassInfo(GlassType.Cocktail, 1.0f, 1.0f, GlassLiquid.kWineGlass, 0.005f);
+  public static GlassInfo kShot              = new GlassInfo(GlassType.Shot, 0.65f, 0.95f, GlassLiquid.kDoubleMeasure, 0.035f);
+  public static GlassInfo kWine              = new GlassInfo(GlassType.Wine, 2.0f, 2.0f, GlassLiquid.kWineGlass, 0.02f);
 }
 
 
@@ -361,6 +496,25 @@ public class Glass : MonoBehaviour
   public bool liquidsOrderChanged = false;
   int idx;
   float z;
+  
+  class Polyline
+  {
+    public List<Vector3> points;
+
+    public Polyline(Vector3 a, Vector3 b, params Vector3[] p)
+    {
+      points = new List<Vector3>(2 + p.Length);
+      points.Add(a);
+      points.Add(b);
+      foreach(var pt in p)
+      {
+        points.Add(pt);
+      }
+    }
+  }
+
+  List<Polyline> GlassShape    = new List<Polyline>();
+  List<Vector4> GlassCollider = new List<Vector4>();
 
   static Color kColour_Glass = new Color32(255, 255, 255, 255);
 
@@ -380,21 +534,41 @@ public class Glass : MonoBehaviour
   {
     get { return GlassInfo.width; }
   }
-  
+
   public float height
   {
     get { return GlassInfo.height; }
   }
-  
+
   public float halfWidth
   {
     get { return GlassInfo.halfWidth; }
   }
-  
+
   public float halfHeight
   {
     get { return GlassInfo.halfHeight; }
   }
+
+  public GlassLiquid BeerHead;
+  public float BeerHeadTimer;
+
+//  GlassLiquid beerHead;
+//
+//  public GlassLiquid BeerHead
+//  {
+//    get
+//    { 
+//      if (beerHead != null && beerHead.type == LiquidType.None)
+//        return null;
+//      
+//      return beerHead; 
+//    }
+//    set
+//    {
+//      beerHead = value;
+//    }
+//  }
 
   Glass()
   {
@@ -419,7 +593,7 @@ public class Glass : MonoBehaviour
     vertices = new List<Vector3>(100*3);
     colours = new List<Color>(100*3);
     indexes = new List<int>(100*3);
-    
+
     updateNeeded = true;
     liquidsOrderChanged = true;
 
@@ -456,6 +630,73 @@ public class Glass : MonoBehaviour
     Vector3 a, b, c, d;
     Quad(tl, br, out a, out b, out c, out d);
     Shear(shearT, shearB, ref a, ref b, ref c, ref d);
+
+    vertices.Add(a);
+    vertices.Add(b);
+    vertices.Add(c);
+    vertices.Add(d);
+
+    colours.Add(col);
+    colours.Add(col);
+    colours.Add(col);
+    colours.Add(col);
+
+    indexes.Add(idx + 0);
+    indexes.Add(idx + 1);
+    indexes.Add(idx + 2);
+
+    indexes.Add(idx + 2);
+    indexes.Add(idx + 1);
+    indexes.Add(idx + 3);
+
+    indexes.Add(idx + 0);
+    indexes.Add(idx + 2);
+    indexes.Add(idx + 1);
+
+    indexes.Add(idx + 2);
+    indexes.Add(idx + 3);
+    indexes.Add(idx + 1);
+
+    idx += 4;
+  }
+  
+  void PushQuad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color col)
+  {
+
+    vertices.Add(a);
+    vertices.Add(b);
+    vertices.Add(c);
+    vertices.Add(d);
+
+    colours.Add(col);
+    colours.Add(col);
+    colours.Add(col);
+    colours.Add(col);
+
+    indexes.Add(idx + 0);
+    indexes.Add(idx + 1);
+    indexes.Add(idx + 2);
+
+    indexes.Add(idx + 2);
+    indexes.Add(idx + 1);
+    indexes.Add(idx + 3);
+
+    indexes.Add(idx + 0);
+    indexes.Add(idx + 2);
+    indexes.Add(idx + 1);
+
+    indexes.Add(idx + 2);
+    indexes.Add(idx + 3);
+    indexes.Add(idx + 1);
+
+    idx += 4;
+  }
+
+  void PushQuad2(Vector3 tl, Vector3 br, Color col, float T0, float T1, float B0, float B1)
+  {
+    Vector3 a, b, c, d;
+    Quad(tl, br, out a, out b, out c, out d);
+    Shear(T0, T1, B0, B1, ref a, ref b, ref c, ref d);
 
     vertices.Add(a);
     vertices.Add(b);
@@ -547,6 +788,27 @@ public class Glass : MonoBehaviour
 
     idx += 3;
   }
+  
+  void PushTriangleNoTrans(Vector3 a, Vector3 b, Vector3 c, Color col)
+  {
+    vertices.Add(a);
+    vertices.Add(b);
+    vertices.Add(c);
+
+    colours.Add(col);
+    colours.Add(col);
+    colours.Add(col);
+
+    indexes.Add(idx + 0);
+    indexes.Add(idx + 1);
+    indexes.Add(idx + 2);
+
+    indexes.Add(idx + 0);
+    indexes.Add(idx + 2);
+    indexes.Add(idx + 1);
+
+    idx += 3;
+  }
 
   void PushTriangle2(Vector3 a, Vector3 b, Vector3 c, Color colA, Color colB, Color colC)
   {
@@ -573,17 +835,27 @@ public class Glass : MonoBehaviour
     idx += 3;
   }
 
-  void Shear(float T, float B, ref Vector3 a, ref Vector3 b, ref Vector3 c, ref Vector3 d)
+  static void Shear(float T, float B, ref Vector3 a, ref Vector3 b, ref Vector3 c, ref Vector3 d)
   {
     a.x += T;
     b.x += T;
     c.x += B;
     d.x += B;
   }
+  
+  static void Shear(float T0, float T1, float B0, float B1, ref Vector3 a, ref Vector3 b, ref Vector3 c, ref Vector3 d)
+  {
+    a.x += T0;
+    b.x += T1;
+    c.x += B0;
+    d.x += B1;
+  }
 
   void AddGlass()
   {
-    switch(GlassType)
+    
+  #if OLD_DRAWING_MODE
+    switch (GlassType)
     {
       default:
       {
@@ -591,6 +863,16 @@ public class Glass : MonoBehaviour
         PushQuad(new Vector3(-halfWidth, -glassWidth*2.0f), new Vector3(-halfWidth + glassWidth, height - glassWidth), kColour_Glass, -0.0f, 0.0f);
         // Right
         PushQuad(new Vector3(halfWidth - glassWidth, -glassWidth*2.0f), new Vector3(halfWidth, height - glassWidth), kColour_Glass, 0.0f, 0.0f);
+        // Bottom
+        PushQuad(new Vector3(-halfWidth, height - glassWidth), new Vector3(halfWidth, height), kColour_Glass, 0.0f, 0.0f);
+      }
+      break;
+      case GlassType.Shot:
+      {
+        // Left
+        PushQuad2(new Vector3(-halfWidth, -glassWidth*2.0f), new Vector3(-halfWidth + glassWidth, height - glassWidth), kColour_Glass, -0.1f, 0.0f, 0.0f, 0.0f);
+        // Right
+        PushQuad2(new Vector3(halfWidth - glassWidth, -glassWidth*2.0f), new Vector3(halfWidth, height - glassWidth), kColour_Glass, 0.0f, 0.1f, 0.0f, 0.0f);
         // Bottom
         PushQuad(new Vector3(-halfWidth, height - glassWidth), new Vector3(halfWidth, height), kColour_Glass, 0.0f, 0.0f);
       }
@@ -606,24 +888,35 @@ public class Glass : MonoBehaviour
       }
       break;
     }
+    #else
+    DrawGlassShape();
+    #endif
+    
   }
 
   void AddLiquids()
   {
+    float hgw = glassWidth * 0.5f;
+
     if (liquids != null)
     {
       float y0 = height - glassWidth;
+
+      float amountY0 = 0.0f;
 
       for (int liquidIi = 0; liquidIi < liquids.Count; liquidIi++)
       {
         var liquid = liquids[liquidIi];
         bool isTop = (liquidIi == liquids.Count - 1);
 
+        float amountY1 = amountY0 + liquid.amount;
+
         float y1 = y0 - (height*liquid.amount);
 
         Color col = GlassLiquid.GetColour(liquid.type);
         Color colHead = GlassLiquid.GetColourHead(liquid.type);
 
+        #region Animation
         if (liquid.animate)
         {
           const int nbTriangles = 17;
@@ -712,10 +1005,28 @@ public class Glass : MonoBehaviour
               liquid.animate = false;
             }
           }
-
+          
+  #if OLD_DRAWING_MODE
           PushQuad(new Vector3(-halfWidth + glassWidth, y0), new Vector3(halfWidth - glassWidth, y1), GlassLiquid.GetColour(liquid.type));
+  #else
+          //float xx = FindGlassInner(halfWidth, liquid.amount);
+          //PushQuad(new Vector3(-xx * width, y0), new Vector3(halfWidth - glassWidth * 0.5f, y1), GlassLiquid.GetColour(liquid.type));
+          
 
-          float triangleWidth = (width - glassWidth*2.0f)/nbTriangles;
+          float xx0 = Mathf.Abs(FindGlassX(amountY0)) * width; 
+          float xx1 = Mathf.Abs(FindGlassX(amountY1)) * width; 
+          // PushQuad(new Vector3(-yy1 + glassWidth * 0.5f, y0), new Vector3(yy1 - glassWidth * 0.5f, y1), GlassLiquid.GetColour(liquid.type));
+          
+          PushQuad(
+              new Vector3(-xx1 + hgw, -y1), 
+              new Vector3(+xx1 - hgw, -y1), 
+              new Vector3(-xx0 + hgw, -y0), 
+              new Vector3(+xx0 - hgw, -y0), 
+              GlassLiquid.GetColour(liquid.type));
+
+  #endif
+
+          float triangleWidth = ((xx1 * 2.0f) - (hgw * 2.0f)) / nbTriangles;
 
           liquid.animationTimer += Time.deltaTime;
           updateNeeded = true;
@@ -724,10 +1035,12 @@ public class Glass : MonoBehaviour
           float ly = y1 + h;
 
           float lastOffset = offset;
+          
+          // PushQuad(new Vector3(-xx1 + hgw, y1 - 0.05f), new Vector3(xx1 - hgw, y1 - 0.10f), Color.green);
 
           for (int i = 0; i < nbTriangles; i++)
           {
-            float tx0 = -halfWidth + glassWidth + (i*triangleWidth);
+            float tx0 = -xx1 + hgw + (i*triangleWidth);
             float tx1 = tx0 + triangleWidth;
             float ty = y1;
 
@@ -747,17 +1060,37 @@ public class Glass : MonoBehaviour
             ly = ty + h;
           }
         }
+        #endregion
         else
         {
+          float xx0 = Mathf.Abs(FindGlassX(amountY0)) * width; 
+          float xx1 = Mathf.Abs(FindGlassX(amountY1)) * width; 
+
           liquid.centerY = y1;
-          PushQuad(new Vector3(-halfWidth + glassWidth, y0), new Vector3(halfWidth - glassWidth, y1), col);
+          
+          #if OLD_DRAWING_MODE
+            PushQuad(new Vector3(-halfWidth + glassWidth, y0), new Vector3(halfWidth - glassWidth, y1), col);
+          #else
+            PushQuad(
+                new Vector3(-xx1 + hgw, -y1), 
+                new Vector3(+xx1 - hgw, -y1), 
+                new Vector3(-xx0 + hgw, -y0), 
+                new Vector3(+xx0 - hgw, -y0), 
+                GlassLiquid.GetColour(liquid.type));
+          #endif
+          
           if (isTop)
           {
-            PushQuad(new Vector3(-halfWidth + glassWidth, y1), new Vector3(halfWidth - glassWidth, y1 - 0.05f), colHead);
+            #if OLD_DRAWING_MODE
+              PushQuad(new Vector3(-halfWidth, y1), new Vector3(halfWidth, y1 - 0.05f), colHead);
+            #else
+              PushQuad(new Vector3(-xx1 + hgw, y1), new Vector3(xx1 - hgw, y1 - 0.05f), colHead);
+            #endif
           }
         }
 
-        if (liquid.pourSize > 0)
+        // Pouring Liquid
+        if (Game.State == GameState.Pour && liquid.type != LiquidType.BeerHead && liquid.pourSize > 0)
         {
           int nbSplashes = 10;
 
@@ -787,6 +1120,7 @@ public class Glass : MonoBehaviour
         }
 
         y0 = y1;
+        amountY0 = amountY1;
       }
     }
   }
@@ -798,6 +1132,16 @@ public class Glass : MonoBehaviour
     vertices.Clear();
     indexes.Clear();
     colours.Clear();
+    
+    if (GlassShape == null)
+    {
+      GlassShape = new List<Polyline>(4);
+      UpdateGlassShape();
+    }
+    else if (GlassShape.Count == 0)
+    {
+      UpdateGlassShape();
+    }
 
     z = 0.0f;
     AddLiquids();
@@ -828,4 +1172,212 @@ public class Glass : MonoBehaviour
 
     return liquids[liquids.Count - 1];
   }
+
+  public GlassLiquid FindLiquid(LiquidType lt)
+  {
+    for (int liquidIi = 0; liquidIi < liquids.Count; liquidIi++)
+    {
+      var liquid = liquids[liquidIi];
+      if (liquid.type == lt)
+        return liquid;
+    }
+    return null;
+  }
+
+  public void DeleteLiquid(GlassLiquid liquid)
+  {
+    if (liquid.ingredient != null)
+    {
+      liquid.ingredient.Liquid = null;
+      if (liquid.ingredient.Measure == null)
+      {
+        liquid.ingredient.LiquidType = LiquidType.None;
+        liquid.ingredient.Disable();
+      }
+    }
+
+    liquids.Remove(liquid);
+    liquidsOrderChanged = true;
+  }
+
+  public void GameStart()
+  {
+    foreach(var liquid in liquids)
+    {
+      if (liquid.ingredient != null)
+      {
+        liquid.ingredient.Liquid = null;
+      }
+      liquid.type = LiquidType.None;
+    }
+
+    if (GlassShape == null)
+    {
+      GlassShape = new List<Polyline>(4);
+    }
+    else
+    {
+      GlassShape.Clear();
+    }
+
+    Sum = 0.0f;
+    BeerHead = null;
+    BeerHeadTimer = 0.0f;
+    liquids.Clear();
+    updateNeeded = true;
+  }
+
+  void UpdateGlassShape()
+  {
+    GlassShape.Clear();
+    GlassCollider.Clear();
+
+    switch(GlassType)
+    {
+      case GlassType.None:
+        break;
+      case GlassType.Pint:
+      {
+        GlassCollider.Add(new Vector4(-0.5f,0,-0.75f, 1.1f));
+        
+        GlassShape.Add(new Polyline(
+          new Vector3(-0.75f, 1.1f),
+          new Vector3(-0.5f,  0),
+          new Vector3(+0.5f,  0),
+          new Vector3(+0.75f, 1.1f)
+        ));
+        
+      }
+      break;
+      case GlassType.HalfPint:
+      {
+        GlassCollider.Add(new Vector4(-0.5f,0,-0.75f, 1.1f));
+        
+        GlassShape.Add(new Polyline(
+          new Vector3(-0.75f, 1.1f),
+          new Vector3(-0.5f,  0),
+          new Vector3(+0.5f,  0),
+          new Vector3(+0.75f, 1.1f)
+        ));
+      }
+        break;
+      case GlassType.Highball:
+      {
+      
+        GlassCollider.Add(new Vector4(-0.5f,0,-0.5f, 1.1f));
+        
+        GlassShape.Add(new Polyline(
+          new Vector3(-0.5f, 1.1f),
+          new Vector3(-0.5f,  0),
+          new Vector3(+0.5f,  0),
+          new Vector3(+0.5f, 1.1f)
+        ));
+      }
+        break;
+      case GlassType.Cocktail:
+        GlassCollider.Add(new Vector4(-0.5f,0,-0.75f, 1.1f));
+        
+        GlassShape.Add(new Polyline(
+          new Vector3(-0.75f, 1.1f),
+          new Vector3(-0.5f,  0),
+          new Vector3(+0.5f,  0),
+          new Vector3(+0.75f, 1.1f)
+        ));
+        break;
+      case GlassType.Shot:
+        GlassCollider.Add(new Vector4(-0.5f,0,-0.75f, 1.1f));
+        
+        GlassShape.Add(new Polyline(
+          new Vector3(-0.75f, 1.1f),
+          new Vector3(-0.5f,  0),
+          new Vector3(+0.5f,  0),
+          new Vector3(+0.75f, 1.1f)
+        ));
+        break;
+      case GlassType.Wine:
+        GlassCollider.Add(new Vector4(-0.5f,0,-0.75f, 1.1f));
+        
+        GlassShape.Add(new Polyline(
+          new Vector3(-0.75f, 1.1f),
+          new Vector3(-0.5f,  0),
+          new Vector3(+0.5f,  0),
+          new Vector3(+0.75f, 1.1f)
+        ));
+        break;
+    }
+  }
+
+  void DrawGlassShape()
+  {
+    for (int lineIi = 0; lineIi < GlassShape.Count; lineIi++)
+    {
+      Polyline ln = GlassShape[lineIi];
+      DrawPolyLine(ln, glassWidth, kColour_Glass);
+    }
+  }
+
+  void DrawPolyLine(Polyline ln, float thickness, Color col)
+  {
+    thickness *= 0.5f;
+    
+    float x1 = ln.points[0].x, y1 = ln.points[0].y, x2, y2;
+    
+    x1 = (x1 * width);
+    y1 = (y1 * height) - height;
+
+    PushQuad(new Vector3(x1 - thickness,  y1 - thickness), 
+              new Vector3(x1 + thickness, y1 - thickness), 
+              new Vector3(x1 - thickness, y1 + thickness), 
+              new Vector3(x1 + thickness, y1 + thickness), kColour_Glass);
+    
+    x1 = ln.points[0].x;
+    y1 = ln.points[0].y;
+    
+    for(int i=1;i < ln.points.Count;i++)
+    {
+      x2 = ln.points[i].x;
+      y2 = ln.points[i].y;
+
+      x1 = (x1 * width);
+      y1 = (y1 * height) - height;
+      x2 = (x2 * width);
+      y2 = (y2 * height) - height;
+      
+      float angle = Mathf.Atan2(y2 - y1, x2 - x1);
+      float t2sina1 = thickness * Mathf.Sin(angle);
+      float t2cosa1 = thickness * Mathf.Cos(angle);
+      float t2sina2 = thickness * Mathf.Sin(angle);
+      float t2cosa2 = thickness * Mathf.Cos(angle);
+
+      PushTriangleNoTrans(new Vector3(x1 + t2sina1, y1 - t2cosa1), new Vector3(x2 + t2sina2, y2 - t2cosa2), new Vector3(x2 - t2sina2, y2 + t2cosa2), col);
+      PushTriangleNoTrans(new Vector3(x2 - t2sina2, y2 + t2cosa2), new Vector3(x1 - t2sina1, y1 + t2cosa1), new Vector3(x1 + t2sina1, y1 - t2cosa1), col);
+
+      PushQuad(new Vector3(x2 - thickness, y2 - thickness), 
+               new Vector3(x2 + thickness, y2 - thickness), 
+               new Vector3(x2 - thickness, y2 + thickness), 
+               new Vector3(x2 + thickness, y2 + thickness), kColour_Glass);
+
+      x1 = ln.points[i].x;
+      y1 = ln.points[i].y;
+    }
+
+  }
+  
+  float FindGlassX(float y)
+  {
+    Vector4 ln = GlassCollider[0];
+    Vector3 a = new Vector3(ln.x, ln.y), b = new Vector3(ln.z, ln.w);
+    Vector3 dir = (b - a).normalized;
+    Vector3 up = new Vector3(0,1,0);
+
+    float angle = (90.0f - (Vector3.Dot(dir, up) * Mathf.Rad2Deg)) * Mathf.Deg2Rad;
+    
+    float t = y / Mathf.Cos(angle);
+
+    Vector3 pt = a + dir * t;
+    
+    return pt.x;
+  }
+
+
 }
