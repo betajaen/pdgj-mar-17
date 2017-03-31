@@ -1,0 +1,24 @@
+vermouth
+ginger beer
+orange juice
+cranberry juice
+liqueur
+irish cream
+schnapps
+rum
+sodawater
+fruitcup
+tonic water
+gin
+tequila
+
+
+
+
+
+Sex on the Beach;HIGHBALL;1 Schnapps;1 Vodka;1 Orange;1 Cranberry
+Gin and Tonic;HIGHBALL;2 Gin;* Tonic;_ICE
+Mojito;HIGHBALL;2 Rum;t SodaWater;_LIME
+Margarita;HIGHBALL;2 Tequila;1 Liqueur;_LIME
+Black Russian;HIGHBALL;2 Vodka;1 Liqueur
+Vesper Martini;2 Gin;1 Vodka

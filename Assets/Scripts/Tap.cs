@@ -82,100 +82,8 @@ public class Tap : MonoBehaviour
     //const float flowRate = 0.005f;
     
     float flowRate = Glass.GlassInfo.flowRate;
-
-    // B - Vodka
-    if (Controls.Action2Down)
-    {
-      Pour(LiquidType.Vodka, flowRate);
-      update = true;
-    }
-    else
-    {
-      if (Unpour(LiquidType.Vodka))
-      {
-        update = true;
-      }
-    }
     
-    
-    // X - Whiskey
-    if (Controls.Action3Down)
-    {
-      Pour(LiquidType.Whiskey, flowRate);
-      update = true;
-    }
-    else
-    {
-      if (Unpour(LiquidType.Whiskey))
-      {
-        update = true;
-      }
-    }
-    
-    // Y - Wine
-    if (Controls.Action4Down)
-    {
-      Pour(LiquidType.Wine, flowRate);
-      update = true;
-    }
-    else
-    {
-      if (Unpour(LiquidType.Wine))
-      {
-        update = true;
-      }
-    }
-    
-    
-    // Up - Lemonade
-    if (Controls.DPadUpDown)
-    {
-      Pour(LiquidType.Lemonade, flowRate);
-      update = true;
-    }
-    else
-    {
-      if (Unpour(LiquidType.Lemonade))
-      {
-        update = true;
-      }
-    }
-    
-    
-    // Right - Add Ice 
-    if (Controls.DPadRight)
-    {
-      // TODO: Ice
-    }
-    
-    
-    // Left - Water
-    if (Controls.DPadLeftDown)
-    {
-      Pour(LiquidType.Water, flowRate);
-      update = true;
-    }
-    else
-    {
-      if (Unpour(LiquidType.Water))
-      {
-        update = true;
-      }
-    }
-    
-    // Left - Water
-    if (Controls.DPadDownDown)
-    {
-      Pour(LiquidType.Cola, flowRate);
-      update = true;
-    }
-    else
-    {
-      if (Unpour(LiquidType.Cola))
-      {
-        update = true;
-      }
-    }
+    // BEER - Left Thumb Stick, Pull Down
 
     float beerTap = Mathf.Abs(Mathf.Min(0.0f, Controls.LeftStickY));
     
@@ -198,9 +106,143 @@ public class Tap : MonoBehaviour
       }
     }
 
+    // Action and DPad buttons
+
+    // Action2
+    if (Controls.Action2Down && Game.Tap_Action2.Liquid != LiquidType.None)
+    {
+        Pour(Game.Tap_Action2.Liquid, flowRate);
+        update = true;
+    }
+    else if (Game.Tap_Action2.Liquid != LiquidType.None)
+    {
+      if (Unpour(Game.Tap_Action2.Liquid))
+      {
+        update = true;
+      }
+    }
+    else if (Controls.Action2 && Game.Tap_Action2.Solid != SolidType.None)
+    {
+      AddSolid(Game.Tap_Action2.Solid);
+    }
+    
+    
+    // Action3
+    if (Controls.Action3Down && Game.Tap_Action3.Liquid != LiquidType.None)
+    {
+        Pour(Game.Tap_Action3.Liquid, flowRate);
+        update = true;
+    }
+    else if (Game.Tap_Action3.Liquid != LiquidType.None)
+    {
+      if (Unpour(Game.Tap_Action3.Liquid))
+      {
+        update = true;
+      }
+    }
+    else if (Controls.Action3 && Game.Tap_Action3.Solid != SolidType.None)
+    {
+      AddSolid(Game.Tap_Action3.Solid);
+    }
+    
+    
+    // Action4
+    if (Controls.Action4Down && Game.Tap_Action4.Liquid != LiquidType.None)
+    {
+        Pour(Game.Tap_Action4.Liquid, flowRate);
+        update = true;
+    }
+    else if (Game.Tap_Action4.Liquid != LiquidType.None)
+    {
+      if (Unpour(Game.Tap_Action4.Liquid))
+      {
+        update = true;
+      }
+    }
+    else if (Controls.Action4 && Game.Tap_Action4.Solid != SolidType.None)
+    {
+      AddSolid(Game.Tap_Action4.Solid);
+    }
+    
+    // Up
+    if (Controls.DPadUpDown && Game.Tap_Up.Liquid != LiquidType.None)
+    {
+        Pour(Game.Tap_Up.Liquid, flowRate);
+        update = true;
+    }
+    else if (Game.Tap_Up.Liquid != LiquidType.None)
+    {
+      if (Unpour(Game.Tap_Up.Liquid))
+      {
+        update = true;
+      }
+    }
+    else if (Controls.DPadUp && Game.Tap_Up.Solid != SolidType.None)
+    {
+      AddSolid(Game.Tap_Up.Solid);
+    }
+    
+    // Right
+    if (Controls.DPadRightDown && Game.Tap_Right.Liquid != LiquidType.None)
+    {
+        Pour(Game.Tap_Right.Liquid, flowRate);
+        update = true;
+    }
+    else if (Game.Tap_Right.Liquid != LiquidType.None)
+    {
+      if (Unpour(Game.Tap_Right.Liquid))
+      {
+        update = true;
+      }
+    }
+    else if (Controls.DPadRight && Game.Tap_Right.Solid != SolidType.None)
+    {
+      AddSolid(Game.Tap_Right.Solid);
+    }
+    
+    // Down
+    if (Controls.DPadDownDown && Game.Tap_Down.Liquid != LiquidType.None)
+    {
+        Pour(Game.Tap_Down.Liquid, flowRate);
+        update = true;
+    }
+    else if (Game.Tap_Down.Liquid != LiquidType.None)
+    {
+      if (Unpour(Game.Tap_Down.Liquid))
+      {
+        update = true;
+      }
+    }
+    else if (Controls.DPadDown && Game.Tap_Down.Solid != SolidType.None)
+    {
+      AddSolid(Game.Tap_Down.Solid);
+    }
+    
+    // Left
+    if (Controls.DPadLeftDown && Game.Tap_Left.Liquid != LiquidType.None)
+    {
+        Pour(Game.Tap_Left.Liquid, flowRate);
+        update = true;
+    }
+    else if (Game.Tap_Left.Liquid != LiquidType.None)
+    {
+      if (Unpour(Game.Tap_Left.Liquid))
+      {
+        update = true;
+      }
+    }
+    else if (Controls.DPadLeft && Game.Tap_Left.Solid != SolidType.None)
+    {
+      AddSolid(Game.Tap_Left.Solid);
+    }
+
     return update;
   }
-  
+
+  private void AddSolid(SolidType solid)
+  {
+  }
+
   void Update()
   {
     switch(Game.State)

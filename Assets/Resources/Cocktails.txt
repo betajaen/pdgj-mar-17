@@ -4,4 +4,15 @@ Whiskey Neat;HIGHBALL;2 Whiskey
 Glass of Red Wine;WINE;4 Wine
 A Small Shandy;HIGHBALL;2 Beer;* Lemonade
 Pint of Beer;PINT;* Beer
+Glass of Cola;HIGHBALL;* Cola
+Glass of Lemonade;HIGHBALL;* Lemonade
+Vodka and Lemonade;HIGHBALL;1 Vodka;* Lemonade
 Whiskey and Cola;HIGHBALL;1 Whiskey;* Cola
+Orange Juice;HIGHBALL;* Orange
+Cranberry Juice;HIGHBALL;* Cranberry
+Irish Cream;HIGHBALL;2 IrishCream
+Vodka and Orange;HIGHBALL;2 Vodka;* Orange
+Vodka and Cranberry;HIGHBALL;2 Vodka;* Cranberry
+Rum and Cola;HIGHBALL;2 Rum;* Cola
+Fruit Cup;HIGHBALL;2 Fruit;3 Lemonade;_FRUIT
+Vodka Tonic;HIGHBALL;2 Vodka;3 Tonic

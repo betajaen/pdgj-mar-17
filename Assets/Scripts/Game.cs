@@ -44,6 +44,29 @@ public enum GameState
   Loose
 }
 
+public class ControlInfo
+{
+  public SolidType   Solid    = SolidType.None;
+  public LiquidType  Liquid   = LiquidType.None;
+
+  public void Reset()
+  {
+    Solid  = SolidType.None;
+    Liquid = LiquidType.None;
+  }
+
+  public void Set(SolidType solid)
+  {
+    Solid = solid;
+  }
+
+  public void Set(LiquidType liquid)
+  {
+    Liquid = liquid;
+  }
+
+}
+
 public class Game : MonoBehaviour
 {
   
@@ -53,6 +76,7 @@ public class Game : MonoBehaviour
   public float lastSum = -1.0f;
   public TextAsset CocktailsTxt;
   public Text  OrderText;
+  public Text  BreweryText;
   
   public List<Ingredient>  ingredients; 
   public List<Cocktail> Cocktails; 
@@ -69,7 +93,26 @@ public class Game : MonoBehaviour
   [SerializeField] public Text       UI_OrderResult;
   [SerializeField] public Stars      UI_Stars;
   [SerializeField] public GameObject UI_ControlsSubmit;
+  [SerializeField] public GameObject UI_BreweryName; 
   
+  public static ControlInfo Tap_Action2 = new ControlInfo();
+  public static ControlInfo Tap_Action3 = new ControlInfo();
+  public static ControlInfo Tap_Action4 = new ControlInfo();
+  public static ControlInfo Tap_Up      = new ControlInfo();
+  public static ControlInfo Tap_Down    = new ControlInfo();
+  public static ControlInfo Tap_Left    = new ControlInfo();
+  public static ControlInfo Tap_Right   = new ControlInfo();
+
+  public ControlMarker Control_Action2;
+  public ControlMarker Control_Action3;
+  public ControlMarker Control_Action4;
+  public ControlMarker Control_Up;
+  public ControlMarker Control_Right;
+  public ControlMarker Control_Down;
+  public ControlMarker Control_Left;
+
+
+
   void Start()
   {
     if (ingredients != null)
@@ -145,6 +188,7 @@ public class Game : MonoBehaviour
     Hide(UI_OrderResult.gameObject);
     Hide(UI_Stars.gameObject);
     Hide(UI_ControlsSubmit);
+    Hide(UI_BreweryName);
 
     switch(newState)
     {
@@ -157,6 +201,7 @@ public class Game : MonoBehaviour
         Show(UI_ControlsRight);
         Show(UI_IngredientsList);
         Show(UI_OrderName);
+        Show(UI_BreweryName);
         
         SetupCocktail(GetNextCocktail());
       }
@@ -478,7 +523,7 @@ public class Game : MonoBehaviour
 
           if (measureText.Length != 2)
           {
-            Debug.LogErrorFormat("Bad Measure: '{0}', in {1}", measureText, line);
+            Debug.LogErrorFormat("Bad Measure: '{0}', in {1}", p[i], line);
             continue;
           }
 
@@ -535,7 +580,19 @@ public class Game : MonoBehaviour
     SendMessage("GameStart");
     Glass.GlassInfo = GlassInfo.GetGlassType(Cocktail.Glass);
     Glass.Sum = 0.0f;
-    OrderText.text = Cocktail.Name;
+    
+    if (GlassLiquid.AllowBeerFestBeers && Cocktail.Name == "Pint of Beer")
+    {
+      String[] tx =  GlassLiquid.BeerFestBeers[UnityEngine.Random.Range(0, GlassLiquid.BeerFestBeers.Length)].Split('-');
+
+      OrderText.text = "Pint of " + tx[0].Trim();
+      BreweryText.text = tx[1].Trim();
+    }
+    else
+    {
+      OrderText.text = Cocktail.Name;
+      BreweryText.text = String.Empty;
+    }
     SetupMeasures();
 
     Debug.LogFormat("Cocktail Setup: Glass = {0}, Name = {1}, GlassMeasures = {2}", Glass.GlassInfo.type, Cocktail.Name, Glass.GlassInfo.measures);
@@ -589,6 +646,7 @@ public class Game : MonoBehaviour
       ingredient.DoSetup(measure.LiquidType, measure, Glass);
     }
 
+    SetUpControls();
     OrderMeasures(true);
   }
 
@@ -619,4 +677,307 @@ public class Game : MonoBehaviour
       }
     }
   }
+
+  public ControlMarker GetAlcholControl(int id)
+  {
+    ControlMarker ctrl = null;
+    
+    switch(id)
+    {
+      case 0: ctrl = Control_Action2; break;
+      case 1: ctrl = Control_Action3; break;
+      case 2: ctrl = Control_Action4; break;
+    }
+
+    return ctrl;
+  }
+  
+  public bool RandomAddAlcholControl(LiquidType liquid, SolidType solid)
+  {
+    bool allUsed = true;
+
+    for(int i=0;i < 3;i++)
+    {
+      ControlMarker ctrl = GetAlcholControl(i);
+      if (ctrl.Liquid != LiquidType.None || ctrl.Solid != SolidType.None)
+      {
+        allUsed = false;
+        break;
+      }
+    }
+
+    if (allUsed == false)
+      return false;
+
+    int steps = 0;
+    while(steps++ < 100)
+    {
+      int r = UnityEngine.Random.Range(0, 3);
+      ControlMarker ctrl = GetAlcholControl(r);
+      
+      if (ctrl.Liquid != LiquidType.None || ctrl.Solid != SolidType.None)
+      {
+        continue;
+      }
+
+      SetAlcholControl(r, liquid, solid);
+      return true;
+    }
+    
+    return false;
+  }
+
+  public bool AddAlcholControl(LiquidType liquid, SolidType solid)
+  {
+    for(int i=0;i < 3;i++)
+    {
+      ControlMarker ctrl = GetAlcholControl(i);
+      if (ctrl.Liquid == LiquidType.None && ctrl.Solid == SolidType.None)
+      {
+        SetAlcholControl(i, liquid, solid);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public bool SetAlcholControl(int id, LiquidType liquid, SolidType solid)
+  {
+    ControlMarker ctrl = GetAlcholControl(id);
+
+    if (ctrl != null)
+    {
+      ctrl.Liquid = liquid;
+      ctrl.Solid = solid;
+      ctrl.ControlUpdated();
+
+      ControlInfo info = null;
+
+      switch(id)
+      {
+        case 0: info = Tap_Action2; break;
+        case 1: info = Tap_Action3; break;
+        case 2: info = Tap_Action4; break;
+      }
+
+      if (info != null)
+      {
+        info.Liquid = liquid;
+        info.Solid  = solid;
+      }
+
+      return true;
+    }
+
+    return false;
+  }
+  
+  public ControlMarker GetNotAlcholControl(int id)
+  {
+    ControlMarker ctrl = null;
+    
+    switch(id)
+    {
+      case 0: ctrl = Control_Up;    break;
+      case 1: ctrl = Control_Right; break;
+      case 2: ctrl = Control_Down;  break;
+      case 3: ctrl = Control_Left;  break;
+    }
+
+    return ctrl;
+  }
+  
+  public bool RandomAddNotAlcholControl(LiquidType liquid, SolidType solid)
+  {
+    bool allUsed = true;
+
+    for(int i=0;i < 4;i++)
+    {
+      ControlMarker ctrl = GetNotAlcholControl(i);
+      if (ctrl.Liquid != LiquidType.None || ctrl.Solid != SolidType.None)
+      {
+        allUsed = false;
+        break;
+      }
+    }
+
+    if (allUsed == false)
+      return false;
+
+    int steps = 0;
+    while(steps++ < 100)
+    {
+      int r = UnityEngine.Random.Range(0, 4);
+      ControlMarker ctrl = GetNotAlcholControl(r);
+      
+      if (ctrl.Liquid != LiquidType.None || ctrl.Solid != SolidType.None)
+      {
+        continue;
+      }
+
+      SetNotAlcholControl(r, liquid, solid);
+      return true;
+    }
+    
+    return false;
+  }
+
+  public bool AddNotAlcholControl(LiquidType liquid, SolidType solid)
+  {
+    for(int i=0;i < 3;i++)
+    {
+      ControlMarker ctrl = GetNotAlcholControl(i);
+      if (ctrl.Liquid == LiquidType.None && ctrl.Solid == SolidType.None)
+      {
+        SetNotAlcholControl(i, liquid, solid);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public bool SetNotAlcholControl(int id, LiquidType liquid, SolidType solid)
+  {
+    ControlMarker ctrl = GetNotAlcholControl(id);
+
+    if (ctrl != null)
+    {
+      ctrl.Liquid = liquid;
+      ctrl.Solid = solid;
+      ctrl.ControlUpdated();
+      
+      ControlInfo info = null;
+
+      switch(id)
+      {
+        case 0: info = Tap_Up;    break;
+        case 1: info = Tap_Right; break;
+        case 2: info = Tap_Down;  break;
+        case 3: info = Tap_Left;  break;
+      }
+
+      if (info != null)
+      {
+        info.Liquid = liquid;
+        info.Solid  = solid;
+      }
+
+
+      return true;
+    }
+
+    return false;
+  }
+
+  public LiquidType GetUniqueRandomLiquid(List<LiquidType> used, LiquidAlcohol al)
+  {
+    int steps = 0;
+
+    while(steps++ < 100)
+    {
+      int idx = UnityEngine.Random.Range(0, used.Count);
+      LiquidType lt = used[idx];
+
+      if (GlassLiquid.LiquidTypeToLiquidAlcohol(lt) != al || lt == LiquidType.BeerHead || lt == LiquidType.Beer)
+        continue;
+      
+      used.Remove(lt);
+      
+      return lt;
+    }
+
+    return LiquidType.None;
+  }
+
+  public void SetUpControls()
+  {
+    int nbLiquids = (int) LiquidType.COUNT;
+
+    List<SolidType>  solids   = new List<SolidType>(8);
+    List<LiquidType> liquids = new List<LiquidType>(nbLiquids);
+    for(int i=0;i < nbLiquids;i++)
+      liquids.Add((LiquidType) i);
+
+    liquids.Remove(LiquidType.None);
+    
+    SetAlcholControl(0, LiquidType.None, SolidType.None);
+    SetAlcholControl(1, LiquidType.None, SolidType.None);
+    SetAlcholControl(2, LiquidType.None, SolidType.None);
+    
+    SetNotAlcholControl(0, LiquidType.None, SolidType.None);
+    SetNotAlcholControl(1, LiquidType.None, SolidType.None);
+    SetNotAlcholControl(2, LiquidType.None, SolidType.None);
+    SetNotAlcholControl(3, LiquidType.None, SolidType.None);
+    
+    for (int measuresIi = 0; measuresIi < Cocktail.Measures.Count; measuresIi++)
+    {
+      CocktailMeasure measure = Cocktail.Measures[measuresIi];
+      
+      SolidType  solid  = SolidType.None; // @TODO. Maybe part of measure?
+      LiquidType liquid = LiquidType.None;
+      
+      liquid = measure.LiquidType;
+      
+      if (solid != SolidType.None)
+      {
+        solids.Add(solid);
+      }
+
+      if (liquid != LiquidType.None)
+      {
+        liquids.Remove(liquid);
+
+        if (liquid == LiquidType.Beer)
+          continue;
+        
+        LiquidAlcohol alcohol = GlassLiquid.LiquidTypeToLiquidAlcohol(liquid);
+
+        if (alcohol == LiquidAlcohol.Yes)
+        {
+          if (RandomAddAlcholControl(liquid, solid) == false)
+          {
+            if (RandomAddNotAlcholControl(liquid, solid) == false)
+            {
+              Debug.LogError("Cannot fit in ingredients. Recipe too complicated");
+            }
+          }
+        }
+        else
+        {
+          
+          if (RandomAddNotAlcholControl(liquid, solid) == false)
+          {
+            if (RandomAddAlcholControl(liquid, solid) == false)
+            {
+              Debug.LogError("Cannot fit in ingredients. Recipe too complicated");
+            }
+          }
+        }
+
+      }
+    }
+
+    // Actions
+    for(int i=0;i < 3;i++)
+    {
+      ControlMarker ctrl = GetAlcholControl(i);
+      if (!(ctrl.Liquid == LiquidType.None && ctrl.Solid == SolidType.None))
+        continue;
+
+      LiquidType lt = GetUniqueRandomLiquid(liquids, LiquidAlcohol.Yes);
+      SetAlcholControl(i, lt, SolidType.None);
+    }
+    
+    // DPad
+    for(int i=0;i < 4;i++)
+    {
+      ControlMarker ctrl = GetNotAlcholControl(i);
+      if (!(ctrl.Liquid == LiquidType.None && ctrl.Solid == SolidType.None))
+        continue;
+
+      LiquidType lt = GetUniqueRandomLiquid(liquids, LiquidAlcohol.No);
+      SetNotAlcholControl(i, lt, SolidType.None);
+    }
+  }
+
 }

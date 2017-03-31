@@ -24,6 +24,9 @@ public class ControlMarker : MonoBehaviour
 {
 
   public ControlName ControlName;
+  public Text        Text;
+  public LiquidType  Liquid;
+  public SolidType   Solid;
   
   Sprite  On, Off;
   bool    wasDown, isDown;
@@ -169,4 +172,30 @@ public class ControlMarker : MonoBehaviour
     }
 
   }
+
+  public void ControlUpdated()
+  {
+    if (Text == null)
+    {
+      Text = gameObject.GetComponentInChildren<Text>();
+    }
+
+    if (Text != null)
+    {
+      if (Liquid != LiquidType.None)
+      {
+        Text.text = GlassLiquid.LiquidTypeToString(Liquid);
+      }
+      else if (Solid != SolidType.None)
+      {
+        Text.text = "Add " + GlassSolid.SolidTypeToString(Solid);
+      }
+      else
+      {
+        Text.text = String.Empty;
+      }
+    }
+
+  }
+
 }
